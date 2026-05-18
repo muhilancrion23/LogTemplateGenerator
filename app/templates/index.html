@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>CLONOS · Parameter Extractor</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #0f1117;
+      color: #c9d1e0;
+      font-family: 'Courier New', monospace;
+      font-size: 13px;
+      min-height: 100vh;
+      padding: 32px 24px;
+    }
+
+    h1 {
+      font-size: 15px;
+      font-weight: normal;
+      color: #e2e8f0;
+      margin-bottom: 28px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      border-bottom: 1px solid #1e2433;
+      padding-bottom: 12px;
+    }
+    h1 span { color: #00d4ff; }
+
+    /* Upload area */
+    .upload-area {
+      border: 1px dashed #2a3345;
+      border-radius: 6px;
+      padding: 32px;
+      text-align: center;
+      cursor: pointer;
+      position: relative;
+      transition: border-color .2s, background .2s;
+      margin-bottom: 16px;
+    }
+    .upload-area:hover, .upload-area.over {
+      border-color: #00d4ff;
+      background: rgba(0,212,255,.03);
+    }
+    .upload-area input {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+      width: 100%;
+      height: 100%;
+    }
+    .upload-area p { color: #4a5568; margin-bottom: 4px; }
+    .upload-area .filename { color: #00d4ff; margin-top: 8px; display: none; }
+    .upload-area .filename.show { display: block; }
+
+    /* Buttons */
+    .row { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+    button {
+      background: #1a202e;
+      color: #c9d1e0;
+      border: 1px solid #2a3345;
+      border-radius: 4px;
+      padding: 8px 18px;
+      font-family: inherit;
+      font-size: 13px;
+      cursor: pointer;
+      transition: border-color .15s, color .15s;
+    }
+    button:hover:not(:disabled) { border-color: #00d4ff; color: #00d4ff; }
+    button:disabled { opacity: .35; cursor: not-allowed; }
+    button.primary { border-color: #00d4ff; color: #00d4ff; }
+    button.primary:hover:not(:disabled) { background: rgba(0,212,255,.08); }
+    button.danger { border-color: #ef4444; color: #ef4444; }
+    button.danger:hover:not(:disabled) { background: rgba(239,68,68,.07); }
+
+    /* Status line */
+    #status { font-size: 12px; color: #4a5568; margin-bottom: 16px; min-height: 16px; }
+    #status.ok      { color: #10b981; }
+    #status.err     { color: #ef4444; }
+    #status.loading { color: #f59e0b; }
+
+    /* Output pane */
+    #output-wrap { display: none; }
+    #output-wrap.show { display: block; }
+
+    #output {
+      background: #090c12;
+      border: 1px solid #1e2433;
+      border-radius: 4px;
+      padding: 20px;
+      white-space: pre;
+      overflow-x: auto;
+      font-size: 12px;
+      line-height: 1.7;
+      color: #c9d1e0;
+      max-height: 60vh;
+      overflow-y: auto;
+      margin-bottom: 16px;
+    }
+
+    /* JSON syntax highlight */
+    .jk { color: #7dd3fc; }
+    .jv { color: #86efac; }
+    .js { color: #fde68a; }
+
+    /* Save bar */
+    .save-bar {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+      padding: 14px 0;
+      border-top: 1px solid #1e2433;
+    }
+    .save-bar input {
+      background: #090c12;
+      border: 1px solid #2a3345;
+      border-radius: 4px;
+      padding: 7px 12px;
+      color: #c9d1e0;
+      font-family: inherit;
+      font-size: 13px;
+      outline: none;
+      flex: 1;
+      min-width: 160px;
+      transition: border-color .15s;
+    }
+    .save-bar input:focus { border-color: #00d4ff; }
+    .save-bar input::placeholder { color: #2a3345; }
+
+    /* Templates list */
+    #templates-wrap {
+      margin-top: 32px;
+      border-top: 1px solid #1e2433;
+      padding-top: 20px;
+    }
+    #templates-wrap h2 {
+      font-size: 11px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: #4a5568;
+      margin-bottom: 14px;
+    }
+    .tpl-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 9px 12px;
+      border: 1px solid #1e2433;
+      border-radius: 4px;
+      margin-bottom: 6px;
+      transition: border-color .15s;
+    }
+    .tpl-row:hover { border-color: #2a3345; }
+    .tpl-name { color: #e2e8f0; }
+    .tpl-meta { color: #4a5568; font-size: 11px; margin-top: 2px; }
+    .tpl-actions { display: flex; gap: 6px; flex-shrink: 0; }
+    .tpl-actions button { padding: 4px 10px; font-size: 11px; }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 4px; height: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #2a3345; border-radius: 2px; }
+  </style>
+</head>
+<body>
+
+<h1>CLONOS · <span>Parameter Extractor</span></h1>
+
+<!-- Upload -->
+<div class="upload-area" id="drop-zone">
+  <input type="file" id="file-input" accept=".pdf,.png,.jpg,.jpeg"/>
+  <p>Drop a PDF or image here, or click to browse</p>
+  <p style="font-size:11px;color:#2a3345;margin-top:4px">PDF · PNG · JPG · JPEG</p>
+  <div class="filename" id="filename"></div>
+</div>
+
+<div class="row">
+  <button class="primary" id="extract-btn" disabled>Extract Parameters</button>
+  <button id="reset-btn">Reset</button>
+</div>
+
+<div id="status"></div>
+
+<!-- Output -->
+<div id="output-wrap">
+  <div id="output"></div>
+  <div class="save-bar">
+    <input id="tpl-name" placeholder="Template name…"/>
+    <input id="tpl-desc" placeholder="Description (optional)…"/>
+    <button class="primary" id="save-btn">Save Template</button>
+  </div>
+</div>
+
+<!-- Saved templates -->
+<div id="templates-wrap">
+  <h2>Saved Templates</h2>
+  <div id="template-list"><span style="color:#4a5568;font-size:12px">No templates yet.</span></div>
+</div>
+
+<script>
+let currentSchema = null;
+let currentFilename = '';
+const $ = id => document.getElementById(id);
+
+// ── File input ────────────────────────────────────────────────────────────────
+const dropZone  = $('drop-zone');
+const fileInput = $('file-input');
+const extractBtn = $('extract-btn');
+
+fileInput.addEventListener('change', () => {
+  const f = fileInput.files[0];
+  if (!f) return;
+  currentFilename = f.name;
+  $('filename').textContent = '📄 ' + f.name;
+  $('filename').classList.add('show');
+  extractBtn.disabled = false;
+  setStatus('');
+});
+
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('over'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('over'));
+dropZone.addEventListener('drop', e => {
+  e.preventDefault();
+  dropZone.classList.remove('over');
+  const f = e.dataTransfer.files[0];
+  if (!f) return;
+  const dt = new DataTransfer();
+  dt.items.add(f);
+  fileInput.files = dt.files;
+  fileInput.dispatchEvent(new Event('change'));
+});
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function setStatus(msg, type = '') {
+  const el = $('status');
+  el.textContent = msg;
+  el.className = type;
+}
+
+function highlight(json) {
+  return json
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+-]?\d+)?)/g, m => {
+      if (/^"/.test(m)) return /:$/.test(m) ? `<span class="jk">${m}</span>` : `<span class="js">${m}</span>`;
+      return `<span class="jv">${m}</span>`;
+    });
+}
+
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ── Extract ───────────────────────────────────────────────────────────────────
+extractBtn.addEventListener('click', async () => {
+  const file = fileInput.files[0];
+  if (!file) return;
+
+  extractBtn.disabled = true;
+  $('output-wrap').classList.remove('show');
+  setStatus('Extracting… this may take a few seconds.', 'loading');
+
+  const fd = new FormData();
+  fd.append('file', file);
+
+  try {
+    const res = await fetch('/upload', { method: 'POST', body: fd });
+    const data = await res.json();
+
+    if (!res.ok) {
+      setStatus('Error: ' + (data.error || res.statusText), 'err');
+      extractBtn.disabled = false;
+      return;
+    }
+
+    currentSchema = data;
+    $('output').innerHTML = highlight(JSON.stringify(data, null, 2));
+    $('output-wrap').classList.add('show');
+    const n = (data.parameters || []).length;
+    setStatus(`✓ ${n} parameter${n !== 1 ? 's' : ''} extracted`, 'ok');
+
+  } catch (err) {
+    setStatus('Network error: ' + err.message, 'err');
+  } finally {
+    extractBtn.disabled = false;
+  }
+});
+
+// ── Reset ─────────────────────────────────────────────────────────────────────
+$('reset-btn').addEventListener('click', () => {
+  currentSchema = null;
+  currentFilename = '';
+  fileInput.value = '';
+  $('filename').classList.remove('show');
+  $('filename').textContent = '';
+  $('output-wrap').classList.remove('show');
+  $('output').innerHTML = '';
+  $('tpl-name').value = '';
+  $('tpl-desc').value = '';
+  extractBtn.disabled = true;
+  setStatus('');
+});
+
+// ── Save template ─────────────────────────────────────────────────────────────
+$('save-btn').addEventListener('click', async () => {
+  const name = $('tpl-name').value.trim();
+  if (!name) { setStatus('Enter a template name first.', 'err'); return; }
+  if (!currentSchema) { setStatus('Nothing to save.', 'err'); return; }
+
+  try {
+    const res = await fetch('/templates/save', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name,
+        description: $('tpl-desc').value.trim(),
+        source_filename: currentFilename,
+        parameters: currentSchema.parameters
+      })
+    });
+    const data = await res.json();
+    if (!res.ok) { setStatus('Save failed: ' + (data.error || ''), 'err'); return; }
+    setStatus(`Saved "${name}"`, 'ok');
+    loadTemplates();
+  } catch (err) {
+    setStatus('Network error: ' + err.message, 'err');
+  }
+});
+
+// ── Templates ─────────────────────────────────────────────────────────────────
+async function loadTemplates() {
+  const list = $('template-list');
+  try {
+    const res = await fetch('/templates');
+    const data = await res.json();
+    const templates = data.templates || [];
+    if (!templates.length) {
+      list.innerHTML = '<span style="color:#4a5568;font-size:12px">No templates yet.</span>';
+      return;
+    }
+    list.innerHTML = templates.map(t => `
+      <div class="tpl-row">
+        <div>
+          <div class="tpl-name">${esc(t.name)}</div>
+          <div class="tpl-meta">
+            ${t.created_at ? new Date(t.created_at).toLocaleDateString() : ''}
+            ${t.source_filename ? ' · ' + esc(t.source_filename) : ''}
+          </div>
+        </div>
+        <div class="tpl-actions">
+          <button onclick="viewTemplate('${t._id}')">View</button>
+          <button class="danger" onclick="deleteTpl('${t._id}', '${esc(t.name)}')">Delete</button>
+        </div>
+      </div>
+    `).join('');
+  } catch {
+    list.innerHTML = '<span style="color:#ef4444">Failed to load templates.</span>';
+  }
+}
+
+async function viewTemplate(id) {
+  try {
+    const res = await fetch(`/templates/${id}`);
+    const t = await res.json();
+    currentSchema = t;
+    currentFilename = t.source_filename || '';
+    $('output').innerHTML = highlight(JSON.stringify(t, null, 2));
+    $('output-wrap').classList.add('show');
+    setStatus('Viewing: ' + t.name, 'ok');
+  } catch {
+    setStatus('Could not load template.', 'err');
+  }
+}
+
+async function deleteTpl(id, name) {
+  if (!confirm(`Delete "${name}"?`)) return;
+  try {
+    const res = await fetch(`/templates/${id}`, { method: 'DELETE' });
+    if (res.ok) { setStatus(`Deleted "${name}"`, 'ok'); loadTemplates(); }
+    else setStatus('Delete failed.', 'err');
+  } catch {
+    setStatus('Network error.', 'err');
+  }
+}
+
+loadTemplates();
+</script>
+</body>
+</html>
