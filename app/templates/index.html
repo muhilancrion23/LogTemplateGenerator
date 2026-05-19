@@ -3,47 +3,160 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>CLONOS · Parameter Extractor</title>
+  <title>LOG · Parameter Extractor</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.10.0/dist/tabler-icons.min.css"/>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+    :root {
+      --bg:       #0d1117;
+      --surface:  #161b27;
+      --surface2: #1c2333;
+      --border:   #21293b;
+      --border2:  #2e3a52;
+      --text:     #cdd5e0;
+      --muted:    #4e5f7a;
+      --accent:   #4f9cf9;
+      --accent-dim: rgba(79,156,249,.08);
+      --green:    #3fb950;
+      --red:      #f85149;
+      --amber:    #d29922;
+      --radius:   8px;
+    }
+
+    html, body { height: 100%; }
+
     body {
-      background: #0f1117;
-      color: #c9d1e0;
-      font-family: 'Courier New', monospace;
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
       font-size: 13px;
+      display: flex;
+      flex-direction: column;
       min-height: 100vh;
-      padding: 32px 24px;
     }
 
-    h1 {
-      font-size: 15px;
-      font-weight: normal;
-      color: #e2e8f0;
-      margin-bottom: 28px;
-      letter-spacing: 2px;
+    /* ── Header ── */
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 28px;
+      height: 52px;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface);
+      flex-shrink: 0;
+    }
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 14px;
+      font-weight: 600;
+      color: #e6edf3;
+      letter-spacing: .02em;
+    }
+    .logo-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); }
+    .header-right { display: flex; align-items: center; gap: 8px; }
+
+    /* ── Layout ── */
+    .app { display: flex; flex: 1; overflow: hidden; }
+
+    /* ── Sidebar ── */
+    .sidebar {
+      width: 260px;
+      flex-shrink: 0;
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .sidebar-head {
+      padding: 16px 16px 10px;
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: .1em;
       text-transform: uppercase;
-      border-bottom: 1px solid #1e2433;
-      padding-bottom: 12px;
+      color: var(--muted);
     }
-    h1 span { color: #00d4ff; }
+    .sidebar-body { flex: 1; overflow-y: auto; padding: 0 8px 16px; }
 
-    /* Upload area */
-    .upload-area {
-      border: 1px dashed #2a3345;
-      border-radius: 6px;
-      padding: 32px;
+    .tpl-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 10px;
+      border-radius: var(--radius);
+      cursor: pointer;
+      transition: background .12s;
+      margin-bottom: 2px;
+    }
+    .tpl-item:hover { background: var(--surface2); }
+    .tpl-item.active { background: var(--accent-dim); }
+    .tpl-item-info { flex: 1; min-width: 0; }
+    .tpl-item-name {
+      font-size: 12px;
+      color: #e6edf3;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      font-weight: 500;
+    }
+    .tpl-item-meta { font-size: 11px; color: var(--muted); margin-top: 1px; }
+    .tpl-item-del {
+      background: none;
+      border: none;
+      color: var(--muted);
+      cursor: pointer;
+      padding: 3px;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      opacity: 0;
+      transition: opacity .12s, color .12s;
+    }
+    .tpl-item:hover .tpl-item-del { opacity: 1; }
+    .tpl-item-del:hover { color: var(--red); }
+
+    .no-templates {
+      font-size: 12px;
+      color: var(--muted);
       text-align: center;
+      padding: 24px 12px;
+      line-height: 1.6;
+    }
+
+    /* ── Main content ── */
+    .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+
+    /* ── Upload zone ── */
+    .upload-panel {
+      padding: 24px 28px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+    .drop-zone {
+      flex: 1;
+      min-width: 240px;
+      border: 1.5px dashed var(--border2);
+      border-radius: var(--radius);
+      padding: 18px 24px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
       cursor: pointer;
       position: relative;
-      transition: border-color .2s, background .2s;
-      margin-bottom: 16px;
+      transition: border-color .15s, background .15s;
     }
-    .upload-area:hover, .upload-area.over {
-      border-color: #00d4ff;
-      background: rgba(0,212,255,.03);
+    .drop-zone:hover, .drop-zone.over {
+      border-color: var(--accent);
+      background: var(--accent-dim);
     }
-    .upload-area input {
+    .drop-zone input {
       position: absolute;
       inset: 0;
       opacity: 0;
@@ -51,171 +164,417 @@
       width: 100%;
       height: 100%;
     }
-    .upload-area p { color: #4a5568; margin-bottom: 4px; }
-    .upload-area .filename { color: #00d4ff; margin-top: 8px; display: none; }
-    .upload-area .filename.show { display: block; }
-
-    /* Buttons */
-    .row { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
-    button {
-      background: #1a202e;
-      color: #c9d1e0;
-      border: 1px solid #2a3345;
-      border-radius: 4px;
-      padding: 8px 18px;
-      font-family: inherit;
-      font-size: 13px;
-      cursor: pointer;
-      transition: border-color .15s, color .15s;
+    .drop-icon {
+      width: 36px; height: 36px;
+      border-radius: var(--radius);
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--accent);
+      font-size: 18px;
+      flex-shrink: 0;
     }
-    button:hover:not(:disabled) { border-color: #00d4ff; color: #00d4ff; }
-    button:disabled { opacity: .35; cursor: not-allowed; }
-    button.primary { border-color: #00d4ff; color: #00d4ff; }
-    button.primary:hover:not(:disabled) { background: rgba(0,212,255,.08); }
-    button.danger { border-color: #ef4444; color: #ef4444; }
-    button.danger:hover:not(:disabled) { background: rgba(239,68,68,.07); }
+    .drop-text p:first-child { font-size: 13px; color: #e6edf3; font-weight: 500; }
+    .drop-text p:last-child { font-size: 11px; color: var(--muted); margin-top: 2px; }
+    .file-chosen { color: var(--accent); font-size: 12px; margin-top: 4px; display: none; }
+    .file-chosen.show { display: block; }
 
-    /* Status line */
-    #status { font-size: 12px; color: #4a5568; margin-bottom: 16px; min-height: 16px; }
-    #status.ok      { color: #10b981; }
-    #status.err     { color: #ef4444; }
-    #status.loading { color: #f59e0b; }
+    .upload-actions { display: flex; flex-direction: column; gap: 8px; flex-shrink: 0; }
 
-    /* Output pane */
-    #output-wrap { display: none; }
-    #output-wrap.show { display: block; }
+    /* ── Buttons ── */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 16px;
+      border-radius: var(--radius);
+      border: 1px solid var(--border2);
+      background: var(--surface2);
+      color: var(--text);
+      font-size: 13px;
+      font-family: inherit;
+      cursor: pointer;
+      transition: border-color .12s, color .12s, background .12s;
+      white-space: nowrap;
+    }
+    .btn:hover:not(:disabled) { border-color: var(--border2); background: #232d42; }
+    .btn:disabled { opacity: .4; cursor: not-allowed; }
+    .btn-primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+      font-weight: 500;
+    }
+    .btn-primary:hover:not(:disabled) { background: #3a8de0; border-color: #3a8de0; }
+    .btn-danger { border-color: var(--red); color: var(--red); }
+    .btn-danger:hover:not(:disabled) { background: rgba(248,81,73,.08); }
 
-    #output {
-      background: #090c12;
-      border: 1px solid #1e2433;
-      border-radius: 4px;
-      padding: 20px;
-      white-space: pre;
-      overflow-x: auto;
+    /* ── Status bar ── */
+    #status-bar {
+      padding: 8px 28px;
       font-size: 12px;
-      line-height: 1.7;
-      color: #c9d1e0;
-      max-height: 60vh;
-      overflow-y: auto;
+      color: var(--muted);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-height: 34px;
+    }
+    #status-bar.ok    { color: var(--green); }
+    #status-bar.err   { color: var(--red); }
+    #status-bar.loading { color: var(--amber); }
+
+    .spinner {
+      width: 14px; height: 14px;
+      border: 2px solid var(--border2);
+      border-top-color: var(--amber);
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+      display: none;
+      flex-shrink: 0;
+    }
+    .spinner.show { display: block; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Results area ── */
+    .results { flex: 1; overflow-y: auto; padding: 20px 28px; display: none; }
+    .results.show { display: block; }
+
+    /* ── Table toolbar ── */
+    .table-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .table-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: #e6edf3;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .count-badge {
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 20px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      font-weight: 400;
+    }
+    .toolbar-right { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+
+    .search-box {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 5px 10px;
+    }
+    .search-box i { color: var(--muted); font-size: 14px; }
+    .search-box input {
+      background: none;
+      border: none;
+      outline: none;
+      color: var(--text);
+      font-size: 12px;
+      font-family: inherit;
+      width: 160px;
+    }
+    .search-box input::placeholder { color: var(--muted); }
+
+    /* ── Parameter table ── */
+    .table-wrap {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
       margin-bottom: 16px;
     }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12.5px;
+      table-layout: fixed;
+    }
+    colgroup .c-si   { width: 48px; }
+    colgroup .c-asset { width: 110px; }
+    colgroup .c-desc  { width: auto; }
+    colgroup .c-def   { width: 110px; }
+    colgroup .c-type  { width: 100px; }
+    colgroup .c-req   { width: 82px; }
+    colgroup .c-sp    { width: 140px; }
 
-    /* JSON syntax highlight */
-    .jk { color: #7dd3fc; }
-    .jv { color: #86efac; }
-    .js { color: #fde68a; }
+    thead tr { background: var(--surface2); }
+    th {
+      padding: 9px 12px;
+      text-align: left;
+      font-size: 10.5px;
+      font-weight: 600;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      color: var(--muted);
+      border-bottom: 1px solid var(--border);
+      cursor: pointer;
+      white-space: nowrap;
+      user-select: none;
+    }
+    th.no-sort { cursor: default; }
+    th .th-inner { display: flex; align-items: center; gap: 4px; }
+    th .sort-ic { font-size: 12px; color: var(--border2); }
+    th.sorted .sort-ic { color: var(--accent); }
 
-    /* Save bar */
+    td {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border);
+      color: var(--text);
+      vertical-align: middle;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    tbody tr:last-child td { border-bottom: none; }
+    tbody tr { transition: background .08s; }
+    tbody tr:hover td { background: var(--surface2); }
+
+    .si-cell { color: var(--muted); font-size: 11px; text-align: center; }
+    .desc-cell { font-weight: 500; color: #e6edf3; white-space: normal; word-break: break-word; }
+    .def-cell { font-family: 'SF Mono', 'Fira Mono', monospace; color: var(--accent); font-size: 11.5px; }
+    .nil { color: var(--muted); }
+
+    /* Type badges */
+    .type-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 11px;
+      font-weight: 500;
+      padding: 3px 8px;
+      border-radius: 20px;
+    }
+    .t-number  { background: rgba(79,156,249,.12); color: #4f9cf9; }
+    .t-text    { background: rgba(63,185,80,.12);  color: #3fb950; }
+    .t-boolean { background: rgba(210,153,34,.12); color: #d29922; }
+    .t-date    { background: rgba(188,115,217,.12);color: #bc73d9; }
+
+    /* Required indicator */
+    .req-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 20px;
+    }
+    .req-yes { background: rgba(63,185,80,.1); color: #3fb950; }
+    .req-no  { background: var(--surface2); color: var(--muted); border: 1px solid var(--border); }
+
+    /* Setpoints */
+    .sp-wrap { display: flex; gap: 5px; flex-wrap: wrap; }
+    .sp-tag {
+      font-size: 11px;
+      padding: 2px 7px;
+      border-radius: 4px;
+      border: 1px solid var(--border2);
+      color: var(--text);
+      font-family: 'SF Mono', 'Fira Mono', monospace;
+      background: var(--surface2);
+    }
+    .sp-tag span { color: var(--muted); margin-right: 2px; }
+
+    /* ── Save bar ── */
     .save-bar {
       display: flex;
       gap: 10px;
       align-items: center;
       flex-wrap: wrap;
-      padding: 14px 0;
-      border-top: 1px solid #1e2433;
+      padding: 14px 0 0;
+      border-top: 1px solid var(--border);
     }
     .save-bar input {
-      background: #090c12;
-      border: 1px solid #2a3345;
-      border-radius: 4px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
       padding: 7px 12px;
-      color: #c9d1e0;
-      font-family: inherit;
+      color: var(--text);
       font-size: 13px;
+      font-family: inherit;
       outline: none;
       flex: 1;
-      min-width: 160px;
-      transition: border-color .15s;
+      min-width: 150px;
+      transition: border-color .12s;
     }
-    .save-bar input:focus { border-color: #00d4ff; }
-    .save-bar input::placeholder { color: #2a3345; }
+    .save-bar input:focus { border-color: var(--accent); }
+    .save-bar input::placeholder { color: var(--muted); }
 
-    /* Templates list */
-    #templates-wrap {
-      margin-top: 32px;
-      border-top: 1px solid #1e2433;
-      padding-top: 20px;
-    }
-    #templates-wrap h2 {
-      font-size: 11px;
-      letter-spacing: 2px;
-      text-transform: uppercase;
-      color: #4a5568;
-      margin-bottom: 14px;
-    }
-    .tpl-row {
+    /* ── Empty / loading states ── */
+    .empty-state {
+      flex: 1;
       display: flex;
+      flex-direction: column;
       align-items: center;
-      justify-content: space-between;
-      padding: 9px 12px;
-      border: 1px solid #1e2433;
-      border-radius: 4px;
-      margin-bottom: 6px;
-      transition: border-color .15s;
+      justify-content: center;
+      gap: 10px;
+      color: var(--muted);
+      padding: 60px 28px;
     }
-    .tpl-row:hover { border-color: #2a3345; }
-    .tpl-name { color: #e2e8f0; }
-    .tpl-meta { color: #4a5568; font-size: 11px; margin-top: 2px; }
-    .tpl-actions { display: flex; gap: 6px; flex-shrink: 0; }
-    .tpl-actions button { padding: 4px 10px; font-size: 11px; }
+    .empty-state i { font-size: 40px; color: var(--border2); }
+    .empty-state p { font-size: 13px; }
 
-    /* Scrollbar */
-    ::-webkit-scrollbar { width: 4px; height: 4px; }
+    .table-empty {
+      text-align: center;
+      padding: 32px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    /* ── Scrollbar ── */
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
     ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { background: #2a3345; border-radius: 2px; }
+    ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
   </style>
 </head>
 <body>
 
-<h1>CLONOS · <span>Parameter Extractor</span></h1>
-
-<!-- Upload -->
-<div class="upload-area" id="drop-zone">
-  <input type="file" id="file-input" accept=".pdf,.png,.jpg,.jpeg"/>
-  <p>Drop a PDF or image here, or click to browse</p>
-  <p style="font-size:11px;color:#2a3345;margin-top:4px">PDF · PNG · JPG · JPEG</p>
-  <div class="filename" id="filename"></div>
-</div>
-
-<div class="row">
-  <button class="primary" id="extract-btn" disabled>Extract Parameters</button>
-  <button id="reset-btn">Reset</button>
-</div>
-
-<div id="status"></div>
-
-<!-- Output -->
-<div id="output-wrap">
-  <div id="output"></div>
-  <div class="save-bar">
-    <input id="tpl-name" placeholder="Template name…"/>
-    <input id="tpl-desc" placeholder="Description (optional)…"/>
-    <button class="primary" id="save-btn">Save Template</button>
+<!-- Header -->
+<header>
+  <div class="logo">
+    <div class="logo-dot"></div>
+    LOG <span style="color:var(--muted);font-weight:400;margin-left:4px">/ Parameter Extractor</span>
   </div>
-</div>
+  <div class="header-right">
+    <span id="header-status" style="font-size:12px;color:var(--muted)"></span>
+  </div>
+</header>
 
-<!-- Saved templates -->
-<div id="templates-wrap">
-  <h2>Saved Templates</h2>
-  <div id="template-list"><span style="color:#4a5568;font-size:12px">No templates yet.</span></div>
-</div>
+<div class="app">
+
+  <!-- Sidebar: saved templates -->
+  <aside class="sidebar">
+    <div class="sidebar-head">Saved Templates</div>
+    <div class="sidebar-body" id="sidebar-list">
+      <div class="no-templates">
+        <i class="ti ti-template" style="font-size:24px;display:block;margin-bottom:8px;color:var(--border2)"></i>
+        No templates saved yet
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <div class="main">
+
+    <!-- Upload panel -->
+    <div class="upload-panel">
+      <div class="drop-zone" id="drop-zone">
+        <input type="file" id="file-input" accept=".pdf,.png,.jpg,.jpeg,.xls,.xlsx,.csv"/>
+        <div class="drop-icon"><i class="ti ti-upload"></i></div>
+        <div class="drop-text">
+          <p>Drop a file or click to browse</p>
+          <p>PDF · PNG · JPG · XLSX · CSV</p>
+          <div class="file-chosen" id="file-chosen"></div>
+        </div>
+      </div>
+      <div class="upload-actions">
+        <button class="btn btn-primary" id="extract-btn" disabled>
+          <i class="ti ti-cpu"></i> Extract Parameters
+        </button>
+        <button class="btn" id="reset-btn">
+          <i class="ti ti-refresh"></i> Reset
+        </button>
+      </div>
+    </div>
+
+    <!-- Status bar -->
+    <div id="status-bar">
+      <div class="spinner" id="spinner"></div>
+      <span id="status-msg">Upload a document to get started.</span>
+    </div>
+
+    <!-- Results -->
+    <div class="results" id="results">
+
+      <!-- Table toolbar -->
+      <div class="table-toolbar">
+        <div class="table-title">
+          Parameters
+          <span class="count-badge" id="count-badge">0</span>
+        </div>
+        <div class="toolbar-right">
+          <div class="search-box">
+            <i class="ti ti-search"></i>
+            <input type="text" id="search" placeholder="Search…" oninput="renderTable()"/>
+          </div>
+        </div>
+      </div>
+
+      <!-- Table -->
+      <div class="table-wrap">
+        <table>
+          <colgroup>
+            <col class="c-si"/><col class="c-asset"/><col class="c-desc"/>
+            <col class="c-def"/><col class="c-type"/><col class="c-req"/><col class="c-sp"/>
+          </colgroup>
+          <thead>
+            <tr>
+              <th class="no-sort"><span class="th-inner">#</span></th>
+              <th onclick="sortBy('asset')"><span class="th-inner">Asset<i class="ti ti-selector sort-ic"></i></span></th>
+              <th onclick="sortBy('description')"><span class="th-inner">Description<i class="ti ti-selector sort-ic"></i></span></th>
+              <th onclick="sortBy('default_value')"><span class="th-inner">Default<i class="ti ti-selector sort-ic"></i></span></th>
+              <th onclick="sortBy('type')"><span class="th-inner">Type<i class="ti ti-selector sort-ic"></i></span></th>
+              <th class="no-sort"><span class="th-inner">Required</span></th>
+              <th class="no-sort"><span class="th-inner">Set points</span></th>
+            </tr>
+          </thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
+
+      <!-- Save bar -->
+      <div class="save-bar">
+        <input id="tpl-name" placeholder="Template name…"/>
+        <input id="tpl-desc" placeholder="Description (optional)…"/>
+        <button class="btn btn-primary" id="save-btn">
+          <i class="ti ti-device-floppy"></i> Save Template
+        </button>
+      </div>
+
+    </div><!-- /results -->
+
+    <!-- Empty state (shown before first extract) -->
+    <div class="empty-state" id="empty-state">
+      <i class="ti ti-file-analytics"></i>
+      <p>Upload a document and extract parameters to see them here.</p>
+    </div>
+
+  </div><!-- /main -->
+</div><!-- /app -->
 
 <script>
-let currentSchema = null;
-let currentFilename = '';
 const $ = id => document.getElementById(id);
 
+let currentSchema  = null;
+let currentFilename = '';
+let sortKey = '';
+let sortDir = 1;
+
 // ── File input ────────────────────────────────────────────────────────────────
-const dropZone  = $('drop-zone');
-const fileInput = $('file-input');
+const dropZone   = $('drop-zone');
+const fileInput  = $('file-input');
 const extractBtn = $('extract-btn');
 
 fileInput.addEventListener('change', () => {
   const f = fileInput.files[0];
   if (!f) return;
   currentFilename = f.name;
-  $('filename').textContent = '📄 ' + f.name;
-  $('filename').classList.add('show');
+  $('file-chosen').textContent = f.name;
+  $('file-chosen').classList.add('show');
   extractBtn.disabled = false;
   setStatus('');
 });
@@ -233,56 +592,45 @@ dropZone.addEventListener('drop', e => {
   fileInput.dispatchEvent(new Event('change'));
 });
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
+// ── Status ────────────────────────────────────────────────────────────────────
 function setStatus(msg, type = '') {
-  const el = $('status');
-  el.textContent = msg;
-  el.className = type;
-}
-
-function highlight(json) {
-  return json
-    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
-    .replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+-]?\d+)?)/g, m => {
-      if (/^"/.test(m)) return /:$/.test(m) ? `<span class="jk">${m}</span>` : `<span class="js">${m}</span>`;
-      return `<span class="jv">${m}</span>`;
-    });
-}
-
-function esc(s) {
-  return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  $('status-bar').className = type;
+  $('status-msg').textContent = msg;
+  $('spinner').className = 'spinner' + (type === 'loading' ? ' show' : '');
+  $('header-status').textContent = '';
 }
 
 // ── Extract ───────────────────────────────────────────────────────────────────
 extractBtn.addEventListener('click', async () => {
   const file = fileInput.files[0];
   if (!file) return;
-
   extractBtn.disabled = true;
-  $('output-wrap').classList.remove('show');
-  setStatus('Extracting… this may take a few seconds.', 'loading');
+  setStatus('Extracting parameters… this may take a few seconds.', 'loading');
+  $('results').classList.remove('show');
+  $('empty-state').style.display = 'none';
 
   const fd = new FormData();
   fd.append('file', file);
 
   try {
-    const res = await fetch('/upload', { method: 'POST', body: fd });
+    const res  = await fetch('/upload', { method: 'POST', body: fd });
     const data = await res.json();
 
     if (!res.ok) {
       setStatus('Error: ' + (data.error || res.statusText), 'err');
-      extractBtn.disabled = false;
+      $('empty-state').style.display = 'flex';
       return;
     }
 
     currentSchema = data;
-    $('output').innerHTML = highlight(JSON.stringify(data, null, 2));
-    $('output-wrap').classList.add('show');
+    loadSchema(data);
     const n = (data.parameters || []).length;
-    setStatus(`✓ ${n} parameter${n !== 1 ? 's' : ''} extracted`, 'ok');
+    setStatus(`${n} parameter${n !== 1 ? 's' : ''} extracted from "${currentFilename}"`, 'ok');
+    $('header-status').textContent = n + ' parameters';
 
   } catch (err) {
     setStatus('Network error: ' + err.message, 'err');
+    $('empty-state').style.display = 'flex';
   } finally {
     extractBtn.disabled = false;
   }
@@ -293,20 +641,118 @@ $('reset-btn').addEventListener('click', () => {
   currentSchema = null;
   currentFilename = '';
   fileInput.value = '';
-  $('filename').classList.remove('show');
-  $('filename').textContent = '';
-  $('output-wrap').classList.remove('show');
-  $('output').innerHTML = '';
+  $('file-chosen').classList.remove('show');
+  $('file-chosen').textContent = '';
+  extractBtn.disabled = true;
+  $('results').classList.remove('show');
+  $('empty-state').style.display = 'flex';
   $('tpl-name').value = '';
   $('tpl-desc').value = '';
-  extractBtn.disabled = true;
-  setStatus('');
+  $('search').value = '';
+  setStatus('Upload a document to get started.');
+  $('header-status').textContent = '';
 });
+
+// ── Table ─────────────────────────────────────────────────────────────────────
+function typeClass(t) {
+  return { number:'t-number', text:'t-text', boolean:'t-boolean', date:'t-date' }[t] || 't-text';
+}
+function typeIcon(t) {
+  return { number:'ti-123', text:'ti-letter-t', boolean:'ti-toggle-left', date:'ti-calendar' }[t] || 'ti-letter-t';
+}
+function esc(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function sortBy(key) {
+  if (sortKey === key) sortDir *= -1; else { sortKey = key; sortDir = 1; }
+  document.querySelectorAll('th').forEach(th => {
+    th.classList.remove('sorted');
+    const ic = th.querySelector('.sort-ic');
+    if (ic) ic.className = 'ti ti-selector sort-ic';
+  });
+  const cols = ['','asset','description','default_value','type'];
+  const idx = cols.indexOf(key);
+  if (idx > 0) {
+    const ths = document.querySelectorAll('th');
+    ths[idx].classList.add('sorted');
+    const ic = ths[idx].querySelector('.sort-ic');
+    if (ic) ic.className = 'ti ' + (sortDir === 1 ? 'ti-sort-ascending' : 'ti-sort-descending') + ' sort-ic';
+  }
+  renderTable();
+}
+
+function renderTable() {
+  if (!currentSchema) return;
+  const q = ($('search').value || '').toLowerCase();
+  let rows = (currentSchema.parameters || []).filter(p =>
+    !q ||
+    (p.description||'').toLowerCase().includes(q) ||
+    (p.asset||'').toLowerCase().includes(q) ||
+    (p.type||'').toLowerCase().includes(q)
+  );
+  if (sortKey) {
+    rows = [...rows].sort((a, b) => {
+      const av = String(a[sortKey]||'').toLowerCase();
+      const bv = String(b[sortKey]||'').toLowerCase();
+      return av < bv ? -sortDir : av > bv ? sortDir : 0;
+    });
+  }
+  $('count-badge').textContent = (currentSchema.parameters||[]).length;
+  const tb = $('tbody');
+  if (!rows.length) {
+    tb.innerHTML = `<tr><td colspan="7" class="table-empty">No parameters match your search.</td></tr>`;
+    return;
+  }
+  tb.innerHTML = rows.map((p, i) => {
+    const sp = p.setpoints || {};
+    const hasMin = sp.min != null, hasMax = sp.max != null;
+    const spHtml = (hasMin || hasMax)
+      ? `<div class="sp-wrap">
+          ${hasMin ? `<span class="sp-tag"><span>min</span>${sp.min}</span>` : ''}
+          ${hasMax ? `<span class="sp-tag"><span>max</span>${sp.max}</span>` : ''}
+         </div>`
+      : `<span class="nil">—</span>`;
+    const asset = p.asset || `<span class="nil">—</span>`;
+    const defVal = p.default_value
+      ? `<span class="def-cell">${esc(p.default_value)}</span>`
+      : `<span class="nil">—</span>`;
+    return `<tr>
+      <td class="si-cell">${i + 1}</td>
+      <td>${esc(p.asset) || '<span class="nil">—</span>'}</td>
+      <td class="desc-cell">${esc(p.description)}</td>
+      <td>${defVal}</td>
+      <td><span class="type-badge ${typeClass(p.type)}">
+        <i class="ti ${typeIcon(p.type)}" style="font-size:12px"></i>${p.type}
+      </span></td>
+      <td>${p.required
+        ? '<span class="req-pill req-yes"><i class="ti ti-check" style="font-size:11px"></i>Yes</span>'
+        : '<span class="req-pill req-no">No</span>'
+      }</td>
+      <td>${spHtml}</td>
+    </tr>`;
+  }).join('');
+}
+
+function loadSchema(schema) {
+  currentSchema = schema;
+  currentFilename = schema.source_filename || currentFilename || '';
+  $('search').value = '';
+  sortKey = ''; sortDir = 1;
+  document.querySelectorAll('th.sorted').forEach(th => {
+    th.classList.remove('sorted');
+    const ic = th.querySelector('.sort-ic');
+    if (ic) ic.className = 'ti ti-selector sort-ic';
+  });
+  renderTable();
+  $('empty-state').style.display = 'none';
+  $('results').classList.add('show');
+}
 
 // ── Save template ─────────────────────────────────────────────────────────────
 $('save-btn').addEventListener('click', async () => {
   const name = $('tpl-name').value.trim();
-  if (!name) { setStatus('Enter a template name first.', 'err'); return; }
+  if (!name)          { setStatus('Enter a template name first.', 'err'); return; }
   if (!currentSchema) { setStatus('Nothing to save.', 'err'); return; }
 
   try {
@@ -315,60 +761,66 @@ $('save-btn').addEventListener('click', async () => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         name,
-        description: $('tpl-desc').value.trim(),
+        description:     $('tpl-desc').value.trim(),
         source_filename: currentFilename,
-        parameters: currentSchema.parameters
+        parameters:      currentSchema.parameters
       })
     });
     const data = await res.json();
     if (!res.ok) { setStatus('Save failed: ' + (data.error || ''), 'err'); return; }
-    setStatus(`Saved "${name}"`, 'ok');
-    loadTemplates();
+    setStatus(`Template "${name}" saved.`, 'ok');
+    $('tpl-name').value = '';
+    $('tpl-desc').value = '';
+    loadSidebar();
   } catch (err) {
     setStatus('Network error: ' + err.message, 'err');
   }
 });
 
-// ── Templates ─────────────────────────────────────────────────────────────────
-async function loadTemplates() {
-  const list = $('template-list');
+// ── Sidebar templates ─────────────────────────────────────────────────────────
+let activeTplId = null;
+
+async function loadSidebar() {
+  const list = $('sidebar-list');
   try {
-    const res = await fetch('/templates');
+    const res  = await fetch('/templates');
     const data = await res.json();
     const templates = data.templates || [];
     if (!templates.length) {
-      list.innerHTML = '<span style="color:#4a5568;font-size:12px">No templates yet.</span>';
+      list.innerHTML = `<div class="no-templates">
+        <i class="ti ti-template" style="font-size:24px;display:block;margin-bottom:8px;color:var(--border2)"></i>
+        No templates saved yet
+      </div>`;
       return;
     }
     list.innerHTML = templates.map(t => `
-      <div class="tpl-row">
-        <div>
-          <div class="tpl-name">${esc(t.name)}</div>
-          <div class="tpl-meta">
+      <div class="tpl-item ${t._id === activeTplId ? 'active' : ''}" onclick="openTemplate('${t._id}')">
+        <div class="tpl-item-info">
+          <div class="tpl-item-name">${esc(t.name)}</div>
+          <div class="tpl-item-meta">
             ${t.created_at ? new Date(t.created_at).toLocaleDateString() : ''}
             ${t.source_filename ? ' · ' + esc(t.source_filename) : ''}
           </div>
         </div>
-        <div class="tpl-actions">
-          <button onclick="viewTemplate('${t._id}')">View</button>
-          <button class="danger" onclick="deleteTpl('${t._id}', '${esc(t.name)}')">Delete</button>
-        </div>
+        <button class="tpl-item-del" title="Delete" onclick="event.stopPropagation(); deleteTpl('${t._id}','${esc(t.name)}')">
+          <i class="ti ti-trash" style="font-size:14px"></i>
+        </button>
       </div>
     `).join('');
   } catch {
-    list.innerHTML = '<span style="color:#ef4444">Failed to load templates.</span>';
+    list.innerHTML = '<div class="no-templates" style="color:var(--red)">Failed to load.</div>';
   }
 }
 
-async function viewTemplate(id) {
+async function openTemplate(id) {
+  activeTplId = id;
   try {
     const res = await fetch(`/templates/${id}`);
-    const t = await res.json();
-    currentSchema = t;
-    currentFilename = t.source_filename || '';
-    $('output').innerHTML = highlight(JSON.stringify(t, null, 2));
-    $('output-wrap').classList.add('show');
-    setStatus('Viewing: ' + t.name, 'ok');
+    const t   = await res.json();
+    loadSchema(t);
+    setStatus(`Viewing template: ${t.name}`, 'ok');
+    $('header-status').textContent = (t.parameters||[]).length + ' parameters';
+    loadSidebar();
   } catch {
     setStatus('Could not load template.', 'err');
   }
@@ -378,14 +830,27 @@ async function deleteTpl(id, name) {
   if (!confirm(`Delete "${name}"?`)) return;
   try {
     const res = await fetch(`/templates/${id}`, { method: 'DELETE' });
-    if (res.ok) { setStatus(`Deleted "${name}"`, 'ok'); loadTemplates(); }
-    else setStatus('Delete failed.', 'err');
+    if (res.ok) {
+      if (activeTplId === id) {
+        activeTplId = null;
+        currentSchema = null;
+        $('results').classList.remove('show');
+        $('empty-state').style.display = 'flex';
+        setStatus('Upload a document to get started.');
+        $('header-status').textContent = '';
+      }
+      setStatus(`Deleted "${name}"`, 'ok');
+      loadSidebar();
+    } else {
+      setStatus('Delete failed.', 'err');
+    }
   } catch {
     setStatus('Network error.', 'err');
   }
 }
 
-loadTemplates();
+// ── Init ──────────────────────────────────────────────────────────────────────
+loadSidebar();
 </script>
 </body>
 </html>

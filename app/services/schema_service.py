@@ -242,6 +242,22 @@ class SchemaService:
         return param
 
     @staticmethod
+    def _coerce_strings(param: dict) -> dict:
+        """
+        Ensure all fields that the model declares as `str`
+        are actually strings.  Gemini sometimes returns
+        default_value and asset as numbers (e.g. 0.06 instead
+        of "0.06") — Pydantic strict mode rejects those.
+        """
+        for field in ("default_value", "asset", "description"):
+            val = param.get(field)
+            if val is None:
+                param[field] = ""
+            elif not isinstance(val, str):
+                param[field] = str(val)
+        return param
+
+    @staticmethod
     def _deduplicate(
         params: list[dict]
     ) -> list[dict]:
@@ -286,8 +302,10 @@ class SchemaService:
 
             # Coerce each parameter
             coerced = [
-                SchemaService._coerce_type(
-                    SchemaService._coerce_setpoints(p)
+                SchemaService._coerce_strings(
+                    SchemaService._coerce_type(
+                        SchemaService._coerce_setpoints(p)
+                    )
                 )
                 for p in params
                 if isinstance(p, dict)
