@@ -13,11 +13,21 @@ logger = logging.getLogger(__name__)
 class FileService:
 
     ALLOWED_EXTENSIONS: set[str] = {
-        "pdf",
+        # Images
         "png",
         "jpg",
-        "jpeg"
+        "jpeg",
+        # Documents
+        "pdf",
+        # Spreadsheets
+        "xlsx",
+        "xls",
+        "csv",
     }
+
+    # Extensions that require spreadsheet → PDF conversion before
+    # being sent to Gemini.
+    SPREADSHEET_EXTENSIONS: set[str] = {"xlsx", "xls", "csv"}
 
     MAX_FILENAME_LENGTH: int = 200
 
@@ -33,6 +43,12 @@ class FileService:
     def get_extension(filename: str) -> str:
         """Return lowercase extension without dot."""
         return filename.rsplit(".", 1)[1].lower()
+
+    @staticmethod
+    def is_spreadsheet(file_path: str) -> bool:
+        """Return True if the file needs spreadsheet → PDF conversion."""
+        ext = FileService.get_extension(file_path)
+        return ext in FileService.SPREADSHEET_EXTENSIONS
 
     @staticmethod
     def generate_safe_filename(filename: str) -> str:

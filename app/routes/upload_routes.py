@@ -7,12 +7,20 @@ upload_routes.py — Flask blueprint for:
   DELETE /templates/<id>→ delete a template
   GET  /               → serve the frontend
 
+Supported input formats
+-----------------------
+  • PDF  — sent directly to Gemini's File API (one call, full context).
+  • Images (PNG / JPG / JPEG) — rasterised path; all pages in one call.
+  • Excel (.xlsx / .xls) — converted to PDF by SpreadsheetService, then
+    sent to Gemini exactly like a native PDF.
+  • CSV — same as Excel: converted to PDF first, then sent to Gemini.
+
 Gemini PDF strategy
 -------------------
-For PDFs we now send the raw file directly to Gemini's File API
-(one API call, full cross-page context, no local rasterisation needed).
-Set USE_PDF_DIRECT=true in your environment to enable this; the default
-falls back to the original per-page image approach for compatibility.
+Set USE_PDF_DIRECT=true in your environment to send PDFs (including
+spreadsheet-derived ones) directly to Gemini's File API.  The default
+is true.  When false the PDF is rasterised to per-page images first
+(original fallback behaviour — compatibility mode).
 """
 import logging
 import os
@@ -22,6 +30,7 @@ from flask import Blueprint, jsonify, render_template, request
 from app.services.file_service import FileService
 from app.services.pdf_service import PDFService
 from app.services.schema_service import SchemaService
+from app.services.spreadsheet_service import SpreadsheetService
 from app.services.template_service import TemplateService
 from app.services.vlm_service import VLMService
 
@@ -34,13 +43,13 @@ upload_blueprint = Blueprint("upload", __name__)
 _USE_PDF_DIRECT = os.environ.get("USE_PDF_DIRECT", "true").lower() == "true"
 
 
-# ── Helpers ──────────────────────────────────────────────────
+# ── Helpers ───────────────────────────────────────────────────────────────────
 
 def _error(message: str, status: int = 400):
     return jsonify({"error": message}), status
 
 
-# ── Routes ───────────────────────────────────────────────────
+# ── Routes ────────────────────────────────────────────────────────────────────
 
 @upload_blueprint.route("/", methods=["GET"])
 def home():
@@ -50,7 +59,9 @@ def home():
 @upload_blueprint.route("/upload", methods=["POST"])
 def upload_document():
     """
-    Accept a PDF or image, run Gemini extraction, return schema.
+    Accept a PDF, image, Excel, or CSV file; run Gemini extraction;
+    return the normalised parameter schema.
+
     Multipart field: file
     """
     uploaded_file = request.files.get("file")
@@ -58,33 +69,63 @@ def upload_document():
         return _error("No file attached.")
 
     saved_path: str | None = None
+    converted_pdf_path: str | None = None  # spreadsheet → PDF temp file
+    processing_path: str | None = None     # either saved_path or converted_pdf_path
     temp_images: list[str] = []
 
     try:
-        # 1. Validate + save upload
+        # ── 1. Validate + save upload ─────────────────────────────────
         saved_path = FileService.save_file(uploaded_file)
         original_filename = uploaded_file.filename or ""
+
+        is_spreadsheet = FileService.is_spreadsheet(saved_path)
         is_pdf = saved_path.lower().endswith(".pdf")
 
-        # 2. Choose extraction strategy
+        # ── 2. Spreadsheet → PDF conversion ──────────────────────────
+        # Excel and CSV are not natively supported by Gemini's File API.
+        # We convert them to a clean PDF so the rest of the pipeline is
+        # identical to the native PDF path — no Gemini prompt changes
+        # needed, full cross-sheet context preserved.
+        if is_spreadsheet:
+            logger.info(
+                "Spreadsheet detected (%s); converting to PDF before Gemini.",
+                original_filename,
+            )
+            converted_pdf_path = SpreadsheetService.to_pdf(saved_path)
+            # From here, treat the converted PDF as the file to process.
+            processing_path = converted_pdf_path
+            is_pdf = True  # converted file is always PDF
+        else:
+            processing_path = saved_path
+
+        # ── 3. Choose Gemini extraction strategy ──────────────────────
         if is_pdf and _USE_PDF_DIRECT:
-            # ── Fast path: send PDF bytes directly to Gemini ──
-            logger.info("Using direct PDF extraction for: %s", original_filename)
-            raw_output = VLMService.extract_parameters_from_pdf(saved_path)
+            # Fast path: upload raw PDF bytes → single Gemini call.
+            logger.info(
+                "Using direct PDF extraction for: %s", original_filename
+            )
+            raw_output = VLMService.extract_parameters_from_pdf(
+                processing_path
+            )
 
         else:
-            # ── Image path: rasterise PDF pages, then send images ──
+            # Image path: rasterise PDF pages, then send all images at
+            # once.  Also handles plain image uploads (PNG/JPG).
             if is_pdf:
-                temp_images = PDFService.convert_pdf_to_images(saved_path)
+                temp_images = PDFService.convert_pdf_to_images(
+                    processing_path
+                )
             else:
-                temp_images = [saved_path]
+                temp_images = [processing_path]
 
             if not temp_images:
-                return _error("Document appears to be empty or unreadable.")
+                return _error(
+                    "Document appears to be empty or unreadable."
+                )
 
             raw_output = VLMService.extract_parameters(temp_images)
 
-        # 3. Schema normalisation + validation
+        # ── 4. Schema normalisation + validation ──────────────────────
         schema = SchemaService.normalize_schema(raw_output)
         schema["source_filename"] = original_filename
 
@@ -99,10 +140,15 @@ def upload_document():
         return _error(f"Internal processing error: {err}", 500)
 
     finally:
-        # Clean up temp rasterised images
-        if temp_images and saved_path and saved_path.lower().endswith(".pdf"):
+        # Clean up temp rasterised images (image-path only)
+        if temp_images and processing_path and processing_path.lower().endswith(".pdf"):
             FileService.cleanup_files(temp_images)
-        # Always delete the saved upload (Gemini has its own copy)
+
+        # Delete the spreadsheet-derived PDF (always temp)
+        if converted_pdf_path:
+            FileService.delete_file(converted_pdf_path)
+
+        # Delete the original uploaded file
         if saved_path:
             FileService.delete_file(saved_path)
 
@@ -130,7 +176,7 @@ def save_template():
             name=name,
             parameters=parameters,
             description=str(body.get("description", "")),
-            source_filename=str(body.get("source_filename", ""))
+            source_filename=str(body.get("source_filename", "")),
         )
         return jsonify({"message": "Template saved.", "id": inserted_id}), 201
     except RuntimeError as err:

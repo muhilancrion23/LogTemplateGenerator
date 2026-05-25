@@ -16,6 +16,7 @@ venv.bak/
 # Uploads and temporary files
 uploads/
 temp/
+Test_Logs/
 
 # IDEs
 .vscode/
